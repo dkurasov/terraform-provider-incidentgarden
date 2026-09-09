@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
@@ -41,6 +43,18 @@ jobs:
 
       - name: Check Terraform formatting
         run: terraform fmt -check -recursive examples
+
+      - name: Install Changie
+        run: go install github.com/miniscruff/changie@v1.25.0
+
+      - name: Require changelog fragment
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        run: |
+          git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD \
+            | grep -Eq '^\.changes/unreleased/[^/]+\.ya?ml$'
+
+      - name: Validate changelog fragments
+        run: make changelog-check
 
   test:
     name: Test

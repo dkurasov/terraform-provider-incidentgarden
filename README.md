@@ -25,4 +25,6 @@ Supported resources are `incidentgarden_team`, `incidentgarden_schedule`, `incid
 
 Run `make test` for isolated tests and `make check` for tests plus static checks. Acceptance tests require a disposable Incident Garden instance and the variables described in [Testing](docs/testing.md).
 
+User-visible changes require a Changie fragment. See the [changelog workflow](docs/changelog.md) for pull request and release instructions.
+
 For a local build that works with `terraform init`, use the filesystem-mirror setup in [`examples/live-test`](examples/live-test/README.md). The provider accepts either a raw JWT or a value beginning with `Bearer `, though a raw JWT is preferred.

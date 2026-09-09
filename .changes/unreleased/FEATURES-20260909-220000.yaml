@@ -1,0 +1,5 @@
+kind: FEATURES
+body: "provider: Add the initial Incident Garden provider and core alert-routing resources."
+time: 2026-09-09T22:00:00+03:00
+custom:
+    Issue: "1"
