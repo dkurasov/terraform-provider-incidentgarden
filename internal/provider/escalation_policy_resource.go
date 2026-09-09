@@ -12,6 +12,7 @@ import (
 )
 
 type escalationPolicyResource struct{ provider *providerData }
+
 type escalationPolicyModel struct {
 	ID           types.String          `tfsdk:"id"`
 	Organization types.String          `tfsdk:"organization"`
@@ -22,6 +23,7 @@ type escalationPolicyModel struct {
 	CreatedAt    types.String          `tfsdk:"created_at"`
 	UpdatedAt    types.String          `tfsdk:"updated_at"`
 }
+
 type escalationStepModel struct {
 	ID                      types.String `tfsdk:"id"`
 	Position                types.Int64  `tfsdk:"position"`
@@ -33,9 +35,11 @@ type escalationStepModel struct {
 }
 
 func NewEscalationPolicyResource() resource.Resource { return &escalationPolicyResource{} }
+
 func (r *escalationPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_escalation_policy"
 }
+
 func (r *escalationPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{Description: "An ordered Incident Garden escalation policy.", Attributes: mergeAttributes(identityAttributes(), map[string]schema.Attribute{
 		"name": schema.StringAttribute{Required: true}, "description": schema.StringAttribute{Optional: true}, "team_id": schema.StringAttribute{Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
@@ -44,9 +48,11 @@ func (r *escalationPolicyResource) Schema(_ context.Context, _ resource.SchemaRe
 		}}},
 	})}
 }
+
 func (r *escalationPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	configureResource(req, resp, &r.provider)
 }
+
 func expandSteps(values []escalationStepModel) []client.EscalationStep {
 	out := make([]client.EscalationStep, len(values))
 	for i, v := range values {
@@ -54,6 +60,7 @@ func expandSteps(values []escalationStepModel) []client.EscalationStep {
 	}
 	return out
 }
+
 func flattenSteps(values []client.EscalationStep) []escalationStepModel {
 	out := make([]escalationStepModel, len(values))
 	for i, v := range values {
@@ -61,6 +68,7 @@ func flattenSteps(values []client.EscalationStep) []escalationStepModel {
 	}
 	return out
 }
+
 func (r *escalationPolicyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var p escalationPolicyModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &p)...)
@@ -84,6 +92,7 @@ func (r *escalationPolicyResource) Create(ctx context.Context, req resource.Crea
 	p.apply(org, v)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &p)...)
 }
+
 func (r *escalationPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var s escalationPolicyModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &s)...)
@@ -102,6 +111,7 @@ func (r *escalationPolicyResource) Read(ctx context.Context, req resource.ReadRe
 	s.apply(s.Organization.ValueString(), v)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &s)...)
 }
+
 func (r *escalationPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var p escalationPolicyModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &p)...)
@@ -120,6 +130,7 @@ func (r *escalationPolicyResource) Update(ctx context.Context, req resource.Upda
 	p.apply(p.Organization.ValueString(), v)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &p)...)
 }
+
 func (r *escalationPolicyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var s escalationPolicyModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &s)...)
@@ -134,9 +145,11 @@ func (r *escalationPolicyResource) Delete(ctx context.Context, req resource.Dele
 		apiDiagnostic(&resp.Diagnostics, "delete escalation policy; repoint integrations and account for retained alerts first", e)
 	}
 }
+
 func (r *escalationPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	importCompositeID(ctx, req, resp)
 }
+
 func (m *escalationPolicyModel) apply(org string, v client.EscalationPolicy) {
 	m.ID = types.StringValue(v.ID)
 	m.Organization = types.StringValue(org)

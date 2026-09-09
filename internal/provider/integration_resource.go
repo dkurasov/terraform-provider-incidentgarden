@@ -13,6 +13,7 @@ import (
 )
 
 type integrationResource struct{ provider *providerData }
+
 type integrationModel struct {
 	ID                  types.String `tfsdk:"id"`
 	Organization        types.String `tfsdk:"organization"`
@@ -30,9 +31,11 @@ type integrationModel struct {
 }
 
 func NewIntegrationResource() resource.Resource { return &integrationResource{} }
+
 func (r *integrationResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_integration"
 }
+
 func (r *integrationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{Description: "An alert ingestion integration. api_key is returned only at creation and is preserved in state.", Attributes: mergeAttributes(identityAttributes(), map[string]schema.Attribute{
 		"name": schema.StringAttribute{Required: true}, "type": schema.StringAttribute{Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}}, "team_id": schema.StringAttribute{Required: true, PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}}, "escalation_policy_id": schema.StringAttribute{Required: true},
@@ -40,9 +43,11 @@ func (r *integrationResource) Schema(_ context.Context, _ resource.SchemaRequest
 		"api_key_prefix": schema.StringAttribute{Computed: true}, "api_key": schema.StringAttribute{Computed: true, Sensitive: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 	})}
 }
+
 func (r *integrationResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	configureResource(req, resp, &r.provider)
 }
+
 func integrationBody(p integrationModel, create bool) (map[string]any, error) {
 	body := map[string]any{"name": p.Name.ValueString(), "escalation_policy_id": p.EscalationPolicyID.ValueString()}
 	if create {
@@ -76,6 +81,7 @@ func integrationBody(p integrationModel, create bool) (map[string]any, error) {
 	}
 	return body, nil
 }
+
 func (r *integrationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var p integrationModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &p)...)
@@ -100,6 +106,7 @@ func (r *integrationResource) Create(ctx context.Context, req resource.CreateReq
 	p.apply(org, v)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &p)...)
 }
+
 func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var s integrationModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &s)...)
@@ -118,6 +125,7 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 	s.apply(s.Organization.ValueString(), v)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &s)...)
 }
+
 func (r *integrationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var p integrationModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &p)...)
@@ -137,6 +145,7 @@ func (r *integrationResource) Update(ctx context.Context, req resource.UpdateReq
 	p.apply(p.Organization.ValueString(), v)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &p)...)
 }
+
 func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var s integrationModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &s)...)
@@ -151,9 +160,11 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		apiDiagnostic(&resp.Diagnostics, "delete integration; resolve or remove open alerts first", e)
 	}
 }
+
 func (r *integrationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	importCompositeID(ctx, req, resp)
 }
+
 func (m *integrationModel) apply(org string, v client.Integration) {
 	m.ID = types.StringValue(v.ID)
 	m.Organization = types.StringValue(org)

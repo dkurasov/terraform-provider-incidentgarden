@@ -13,6 +13,7 @@ import (
 )
 
 type integrationPolicyResource struct{ provider *providerData }
+
 type integrationPolicyModel struct {
 	ID             types.String `tfsdk:"id"`
 	Organization   types.String `tfsdk:"organization"`
@@ -30,18 +31,22 @@ type integrationPolicyModel struct {
 }
 
 func NewIntegrationPolicyResource() resource.Resource { return &integrationPolicyResource{} }
+
 func (r *integrationPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_integration_policy"
 }
+
 func (r *integrationPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	replace := []planmodifier.String{stringplanmodifier.RequiresReplace()}
 	resp.Schema = schema.Schema{Description: "A conditional integration policy exposed by /policies. Scope fields are immutable.", Attributes: mergeAttributes(identityAttributes(), map[string]schema.Attribute{
 		"team_id": schema.StringAttribute{Required: true, PlanModifiers: replace}, "integration_id": schema.StringAttribute{Optional: true, PlanModifiers: replace, Description: "Required when applies_to_all is false; omitted when true."}, "applies_to_all": schema.BoolAttribute{Required: true, PlanModifiers: []planmodifier.Bool{boolplanmodifier.RequiresReplace()}}, "name": schema.StringAttribute{Required: true}, "description": schema.StringAttribute{Optional: true}, "position": schema.Int64Attribute{Required: true}, "is_active": schema.BoolAttribute{Optional: true, Computed: true, PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()}}, "conditions_json": schema.StringAttribute{Optional: true, Computed: true, Description: "JSON PolicyConditions object."}, "action_json": schema.StringAttribute{Required: true, Description: "JSON for the policy's single discriminated action object."},
 	})}
 }
+
 func (r *integrationPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	configureResource(req, resp, &r.provider)
 }
+
 func policyBody(p integrationPolicyModel, create bool) (map[string]any, error) {
 	action, e := rawJSON(p.ActionJSON, "{}")
 	if e != nil {
@@ -72,6 +77,7 @@ func policyBody(p integrationPolicyModel, create bool) (map[string]any, error) {
 	}
 	return body, nil
 }
+
 func (r *integrationPolicyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var p integrationPolicyModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &p)...)
@@ -96,6 +102,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	p.apply(org, v)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &p)...)
 }
+
 func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var s integrationPolicyModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &s)...)
@@ -114,6 +121,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	s.apply(s.Organization.ValueString(), v)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &s)...)
 }
+
 func (r *integrationPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var p integrationPolicyModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &p)...)
@@ -133,6 +141,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	p.apply(p.Organization.ValueString(), v)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &p)...)
 }
+
 func (r *integrationPolicyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var s integrationPolicyModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &s)...)
@@ -147,9 +156,11 @@ func (r *integrationPolicyResource) Delete(ctx context.Context, req resource.Del
 		apiDiagnostic(&resp.Diagnostics, "delete integration policy", e)
 	}
 }
+
 func (r *integrationPolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	importCompositeID(ctx, req, resp)
 }
+
 func (m *integrationPolicyModel) apply(org string, v client.IntegrationPolicy) {
 	m.ID = types.StringValue(v.ID)
 	m.Organization = types.StringValue(org)

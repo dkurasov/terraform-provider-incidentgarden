@@ -10,6 +10,7 @@ import (
 )
 
 type teamResource struct{ provider *providerData }
+
 type teamModel struct {
 	ID           types.String `tfsdk:"id"`
 	Organization types.String `tfsdk:"organization"`
@@ -20,17 +21,21 @@ type teamModel struct {
 }
 
 func NewTeamResource() resource.Resource { return &teamResource{} }
+
 func (r *teamResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_team"
 }
+
 func (r *teamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{Description: "An Incident Garden team.", Attributes: mergeAttributes(identityAttributes(), map[string]schema.Attribute{
 		"name": schema.StringAttribute{Required: true}, "description": schema.StringAttribute{Optional: true},
 	})}
 }
+
 func (r *teamResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	configureResource(req, resp, &r.provider)
 }
+
 func (r *teamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan teamModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -54,6 +59,7 @@ func (r *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 	plan.apply(org, remote)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
+
 func (r *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state teamModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -72,6 +78,7 @@ func (r *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.apply(state.Organization.ValueString(), remote)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
+
 func (r *teamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan teamModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -86,6 +93,7 @@ func (r *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	plan.apply(plan.Organization.ValueString(), remote)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
+
 func (r *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state teamModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -100,9 +108,11 @@ func (r *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		apiDiagnostic(&resp.Diagnostics, "delete team; remove dependent schedules, escalation policies, integrations, and escalation steps first", err)
 	}
 }
+
 func (r *teamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	importCompositeID(ctx, req, resp)
 }
+
 func (m *teamModel) apply(org string, v client.Team) {
 	m.ID = types.StringValue(v.ID)
 	m.Organization = types.StringValue(org)

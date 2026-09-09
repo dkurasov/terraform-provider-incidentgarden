@@ -99,12 +99,15 @@ func mutate[T any](ctx context.Context, c *Client, method, path string, body any
 func (c *Client) CreateTeam(ctx context.Context, org string, body any) (Team, error) {
 	return mutate[Team](ctx, c, http.MethodPost, orgPath(org, "/teams"), body)
 }
+
 func (c *Client) GetTeam(ctx context.Context, org, id string) (Team, error) {
 	return get[Team](ctx, c, orgPath(org, "/teams/"+url.PathEscape(id)))
 }
+
 func (c *Client) UpdateTeam(ctx context.Context, org, id string, body any) (Team, error) {
 	return mutate[Team](ctx, c, http.MethodPatch, orgPath(org, "/teams/"+url.PathEscape(id)), body)
 }
+
 func (c *Client) DeleteTeam(ctx context.Context, org, id string) error {
 	return c.do(ctx, http.MethodDelete, orgPath(org, "/teams/"+url.PathEscape(id)), nil, nil)
 }
@@ -112,12 +115,15 @@ func (c *Client) DeleteTeam(ctx context.Context, org, id string) error {
 func (c *Client) CreateSchedule(ctx context.Context, org string, body any) (Schedule, error) {
 	return mutate[Schedule](ctx, c, http.MethodPost, orgPath(org, "/schedules"), body)
 }
+
 func (c *Client) GetSchedule(ctx context.Context, org, id string) (Schedule, error) {
 	return get[Schedule](ctx, c, orgPath(org, "/schedules/"+url.PathEscape(id)))
 }
+
 func (c *Client) UpdateSchedule(ctx context.Context, org, id string, body any) (Schedule, error) {
 	return mutate[Schedule](ctx, c, http.MethodPatch, orgPath(org, "/schedules/"+url.PathEscape(id)), body)
 }
+
 func (c *Client) DeleteSchedule(ctx context.Context, org, id string) error {
 	return c.do(ctx, http.MethodDelete, orgPath(org, "/schedules/"+url.PathEscape(id)), nil, nil)
 }
@@ -125,12 +131,15 @@ func (c *Client) DeleteSchedule(ctx context.Context, org, id string) error {
 func (c *Client) CreateEscalationPolicy(ctx context.Context, org string, body any) (EscalationPolicy, error) {
 	return mutate[EscalationPolicy](ctx, c, http.MethodPost, orgPath(org, "/escalation-policies"), body)
 }
+
 func (c *Client) GetEscalationPolicy(ctx context.Context, org, id string) (EscalationPolicy, error) {
 	return get[EscalationPolicy](ctx, c, orgPath(org, "/escalation-policies/"+url.PathEscape(id)))
 }
+
 func (c *Client) UpdateEscalationPolicy(ctx context.Context, org, id string, body any) (EscalationPolicy, error) {
 	return mutate[EscalationPolicy](ctx, c, http.MethodPut, orgPath(org, "/escalation-policies/"+url.PathEscape(id)), body)
 }
+
 func (c *Client) DeleteEscalationPolicy(ctx context.Context, org, id string) error {
 	return c.do(ctx, http.MethodDelete, orgPath(org, "/escalation-policies/"+url.PathEscape(id)), nil, nil)
 }
@@ -138,12 +147,15 @@ func (c *Client) DeleteEscalationPolicy(ctx context.Context, org, id string) err
 func (c *Client) CreateIntegration(ctx context.Context, org string, body any) (Integration, error) {
 	return mutate[Integration](ctx, c, http.MethodPost, orgPath(org, "/integrations"), body)
 }
+
 func (c *Client) GetIntegration(ctx context.Context, org, id string) (Integration, error) {
 	return get[Integration](ctx, c, orgPath(org, "/integrations/"+url.PathEscape(id)))
 }
+
 func (c *Client) UpdateIntegration(ctx context.Context, org, id string, body any) (Integration, error) {
 	return mutate[Integration](ctx, c, http.MethodPatch, orgPath(org, "/integrations/"+url.PathEscape(id)), body)
 }
+
 func (c *Client) DeleteIntegration(ctx context.Context, org, id string) error {
 	return c.do(ctx, http.MethodDelete, orgPath(org, "/integrations/"+url.PathEscape(id)), nil, nil)
 }
@@ -151,12 +163,15 @@ func (c *Client) DeleteIntegration(ctx context.Context, org, id string) error {
 func (c *Client) CreateIntegrationPolicy(ctx context.Context, org string, body any) (IntegrationPolicy, error) {
 	return mutate[IntegrationPolicy](ctx, c, http.MethodPost, orgPath(org, "/policies"), body)
 }
+
 func (c *Client) GetIntegrationPolicy(ctx context.Context, org, id string) (IntegrationPolicy, error) {
 	return get[IntegrationPolicy](ctx, c, orgPath(org, "/policies/"+url.PathEscape(id)))
 }
+
 func (c *Client) UpdateIntegrationPolicy(ctx context.Context, org, id string, body any) (IntegrationPolicy, error) {
 	return mutate[IntegrationPolicy](ctx, c, http.MethodPatch, orgPath(org, "/policies/"+url.PathEscape(id)), body)
 }
+
 func (c *Client) DeleteIntegrationPolicy(ctx context.Context, org, id string) error {
 	return c.do(ctx, http.MethodDelete, orgPath(org, "/policies/"+url.PathEscape(id)), nil, nil)
 }
