@@ -7,7 +7,7 @@ provider_version=0.1.0
 provider_os=$(go env GOOS)
 provider_arch=$(go env GOARCH)
 mirror_root="$example_dir/.terraform-provider-mirror"
-package_dir="$mirror_root/registry.terraform.io/incidentgarden/incidentgarden/$provider_version/${provider_os}_${provider_arch}"
+package_dir="$mirror_root/registry.terraform.io/dkurasov/incidentgarden/$provider_version/${provider_os}_${provider_arch}"
 
 rm -rf "$example_dir/.terraform" "$mirror_root"
 rm -f "$example_dir/.terraform.lock.hcl" "$example_dir/.terraformrc"

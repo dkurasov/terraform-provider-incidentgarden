@@ -1,4 +1,4 @@
-module github.com/dkurasov/incidentgarden-terraform-provider
+module github.com/dkurasov/terraform-provider-incidentgarden
 
 go 1.25.8
 

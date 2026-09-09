@@ -6,7 +6,7 @@ This provider manages the core Incident Garden alert-routing topology with Terra
 terraform {
   required_providers {
     incidentgarden = {
-      source = "incidentgarden/incidentgarden"
+      source = "dkurasov/incidentgarden"
     }
   }
 }

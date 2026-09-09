@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     incidentgarden = {
-      source = "incidentgarden/incidentgarden"
+      source = "dkurasov/incidentgarden"
     }
   }
 }

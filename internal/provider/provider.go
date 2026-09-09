@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/dkurasov/incidentgarden-terraform-provider/internal/client"
+	"github.com/dkurasov/terraform-provider-incidentgarden/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	providerschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"

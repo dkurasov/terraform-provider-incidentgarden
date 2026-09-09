@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/dkurasov/incidentgarden-terraform-provider/internal/client"
+	"github.com/dkurasov/terraform-provider-incidentgarden/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"

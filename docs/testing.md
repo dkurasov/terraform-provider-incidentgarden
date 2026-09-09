@@ -19,4 +19,11 @@ export TF_ACC_TERRAFORM_PATH='/absolute/path/to/terraform'
 make testacc
 ```
 
+The normal acceptance target runs the team lifecycle only. The full topology test is separately gated because the hosted API currently retains a hidden integration reference after deletion:
+
+```sh
+export INCIDENTGARDEN_RUN_TOPOLOGY_ACC=1
+make testacc
+```
+
 The current API has no documented machine credential and its access JWT expires after 15 minutes. Refresh the test session immediately before a run. Never use a production organization.

@@ -3,7 +3,7 @@ package provider
 import (
 	"testing"
 
-	"github.com/dkurasov/incidentgarden-terraform-provider/internal/client"
+	"github.com/dkurasov/terraform-provider-incidentgarden/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
