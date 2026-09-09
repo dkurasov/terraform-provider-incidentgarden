@@ -1,0 +1,54 @@
+# ---- Go ----
+# Build and test artifacts
+bin/
+*.exe
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Go workspace files
+go.work
+go.work.sum
+
+# ---- Terraform ----
+# Local provider mirror used by the live-test example
+.terraform-provider-mirror/
+
+# Terraform working directory and plan files
+.terraform/
+*.tfplan
+
+# Terraform state files (may contain secrets)
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Local variable overrides and private variable files
+*.tfvars
+*.tfvars.json
+!example.tfvars
+!*.tfvars.example
+override.tf
+override.tf.json
+
+# Local CLI/credential configs (do not commit tokens)
+.terraformrc
+terraform.rc
+.terraform.lock.hcl
+
+# ---- Editors / OS ----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ---- Environment / secrets ----
+.env
+.env.*
+!.env.example

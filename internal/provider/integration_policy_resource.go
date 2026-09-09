@@ -58,7 +58,9 @@ func policyBody(p integrationPolicyModel, create bool) (map[string]any, error) {
 			return nil, e
 		}
 		var v any
-		json.Unmarshal(raw, &v)
+		if e = json.Unmarshal(raw, &v); e != nil {
+			return nil, e
+		}
 		body["conditions"] = v
 	}
 	if create {

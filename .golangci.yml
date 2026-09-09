@@ -1,0 +1,39 @@
+# golangci-lint configuration for the Incident Garden Terraform provider.
+# Requires golangci-lint v2.x (the version is pinned in .github/workflows/ci.yml).
+version: "2"
+
+run:
+  # Generous timeout for the first (cold-cache) run in CI.
+  timeout: 5m
+  # Lint *_test.go files as well.
+  tests: true
+
+linters:
+  # Start from an explicit allow-list instead of inheriting a default set.
+  default: none
+  enable:
+    # Correctness / bug-detection (the golangci-lint "standard" set).
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # Additional high-value linters with a low false-positive rate.
+    - durationcheck
+    - errorlint
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - predeclared
+    - unconvert
+    - unparam
+
+  exclusions:
+    # Relax reporting inside code-generated files.
+    generated: lax
+
+# Keep formatting consistent; the CI lint job enforces gofmt via this formatter.
+formatters:
+  enable:
+    - gofmt

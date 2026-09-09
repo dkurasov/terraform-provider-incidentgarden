@@ -119,7 +119,9 @@ func (c *Client) do(ctx context.Context, method, path string, request, response 
 		}
 		if method != http.MethodGet && method != http.MethodHead && c.csrf != "" {
 			req.Header.Set("X-CSRF-Token", c.csrf)
-			req.AddCookie(&http.Cookie{Name: "csrf_token", Value: c.csrf})
+			// The CSRF value is sent as a request cookie; Secure/HttpOnly/SameSite
+			// only apply to Set-Cookie response headers.
+			req.AddCookie(&http.Cookie{Name: "csrf_token", Value: c.csrf}) //nolint:gosec // request cookie, not a Set-Cookie header
 		}
 
 		resp, err := c.http.Do(req)
@@ -127,7 +129,7 @@ func (c *Client) do(ctx context.Context, method, path string, request, response 
 			return fmt.Errorf("send request: %w", err)
 		}
 		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if readErr != nil {
 			return fmt.Errorf("read response: %w", readErr)
 		}
@@ -167,15 +169,6 @@ func (c *Client) do(ctx context.Context, method, path string, request, response 
 
 func orgPath(org, suffix string) string {
 	return "/api/v1/orgs/" + url.PathEscape(org) + suffix
-}
-
-type pageEnvelope[T any] struct {
-	Data struct {
-		Items  []T `json:"items"`
-		Total  int `json:"total"`
-		Limit  int `json:"limit"`
-		Offset int `json:"offset"`
-	} `json:"data"`
 }
 
 func Paginate[T any](ctx context.Context, fetch func(context.Context, int, int) ([]T, int, error), limit int) ([]T, error) {

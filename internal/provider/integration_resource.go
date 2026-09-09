@@ -55,7 +55,9 @@ func integrationBody(p integrationModel, create bool) (map[string]any, error) {
 			return nil, e
 		}
 		var v any
-		json.Unmarshal(raw, &v)
+		if e = json.Unmarshal(raw, &v); e != nil {
+			return nil, e
+		}
 		body["severity_mapping"] = v
 	}
 	if !p.SettingsJSON.IsNull() && !p.SettingsJSON.IsUnknown() {
@@ -64,7 +66,9 @@ func integrationBody(p integrationModel, create bool) (map[string]any, error) {
 			return nil, e
 		}
 		var v any
-		json.Unmarshal(raw, &v)
+		if e = json.Unmarshal(raw, &v); e != nil {
+			return nil, e
+		}
 		body["settings"] = v
 	}
 	if !create && !p.IsActive.IsNull() && !p.IsActive.IsUnknown() {
