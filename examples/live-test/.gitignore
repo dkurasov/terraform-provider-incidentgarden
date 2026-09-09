@@ -1,0 +1,8 @@
+.terraform/
+.terraform-provider-mirror/
+.terraformrc
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+terraform.tfvars
