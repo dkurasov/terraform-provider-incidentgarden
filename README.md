@@ -23,6 +23,8 @@ Configuration can also be supplied through `INCIDENTGARDEN_ENDPOINT`, `INCIDENTG
 
 Supported resources are `incidentgarden_team`, `incidentgarden_schedule`, `incidentgarden_escalation_policy`, `incidentgarden_integration`, and `incidentgarden_integration_policy`. Every resource imports as `<organization-slug>/<resource-id>`.
 
+See the [resource reference](docs/resources.md) for all configurable and computed fields, and [Architecture](ARCHITECTURE.md) for the provider's component and lifecycle design.
+
 Run `make test` for isolated tests and `make check` for tests plus static checks. Acceptance tests require a disposable Incident Garden instance and the variables described in [Testing](docs/testing.md).
 
 User-visible changes require a Changie fragment. See the [changelog workflow](docs/changelog.md) for pull request and release instructions.

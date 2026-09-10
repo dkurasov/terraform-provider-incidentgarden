@@ -2,6 +2,8 @@
 
 - API contract: `/Users/d.kurasov/Downloads/openapi-incidentgarden.yaml` (development input; keep changes aligned with the supplied contract).
 - Execution plan and decisions: `docs/exec-plans/terraform-provider-mvp.md`.
+- Maintained architecture: `ARCHITECTURE.md`; update it when component boundaries, lifecycle rules, authentication, or delivery design changes.
+- Terraform field reference: `docs/resources.md`; keep it synchronized with provider and resource schemas.
 - HTTP, authentication, envelopes, retries: `internal/client`.
 - Terraform schemas and lifecycle: `internal/provider`.
 - Format/test: `make fmt`, `make test`, `make check`. The full check requires `golangci-lint` and `terraform` on `PATH`.
