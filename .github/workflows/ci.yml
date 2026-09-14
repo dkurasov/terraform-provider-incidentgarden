@@ -47,11 +47,11 @@ jobs:
       - name: Install Changie
         run: go install github.com/miniscruff/changie@v1.25.0
 
-      - name: Require changelog fragment
+      - name: Require changelog entry
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
         run: |
-          git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD \
-            | grep -Eq '^\.changes/unreleased/[^/]+\.ya?ml$'
+          git diff --diff-filter=A --name-only "${{ github.event.pull_request.base.sha }}" HEAD \
+            | grep -Eq '^\.changes/(unreleased/[^/]+\.ya?ml|v?[0-9]+\.[0-9]+\.[0-9]+\.md)$'
 
       - name: Validate changelog fragments
         run: make changelog-check

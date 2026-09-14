@@ -26,7 +26,9 @@ tests, and documentation corrections do not need a fragment; add the
 `skip-changelog` label to those pull requests.
 
 Run `make changelog-check` before opening the pull request. CI requires a valid
-fragment unless the pull request has the `skip-changelog` label.
+fragment unless the pull request has the `skip-changelog` label. A release pull
+request is also valid after Changie consumes its fragments and adds a versioned
+`.changes/<version>.md` file.
 
 ## Releases
 
