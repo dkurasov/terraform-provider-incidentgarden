@@ -29,4 +29,6 @@ Run `make test` for isolated tests and `make check` for tests plus static checks
 
 User-visible changes require a Changie fragment. See the [changelog workflow](docs/changelog.md) for pull request and release instructions.
 
+Release engineering and external validation are documented in [Releasing](docs/releasing.md), [Dogfooding](docs/dogfooding.md), and the [v0.1.0 release plan](docs/exec-plans/v0.1.0-release.md). Current backend and authentication limitations are tracked in [Known release issues](docs/known-issues.md).
+
 For a local build that works with `terraform init`, use the filesystem-mirror setup in [`examples/live-test`](examples/live-test/README.md). The provider accepts either a raw JWT or a value beginning with `Bearer `, though a raw JWT is preferred.
