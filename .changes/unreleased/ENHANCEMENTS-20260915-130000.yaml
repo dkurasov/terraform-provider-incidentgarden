@@ -1,0 +1,5 @@
+kind: ENHANCEMENTS
+body: "release: Add signed cross-platform release packaging, Registry metadata, and release-readiness documentation."
+time: 2026-09-15T13:00:00+03:00
+custom:
+    Issue: "2"
