@@ -5,18 +5,21 @@ release configuration creates one ZIP per supported OS/architecture, a renamed
 registry manifest, SHA-256 checksums, and a binary detached GPG signature over
 the checksum file. GitHub releases are drafts until explicitly reviewed.
 
-## Current safety gate
+## Publishing safety gate
 
-`.github/workflows/release.yml` runs unsigned snapshot validation only when
-manually dispatched. Its publishing job is hard-disabled. Do not enable it or
-add a tag trigger until the release plan's RC gates are satisfied.
+Manual dispatch runs validation and an unsigned snapshot without publishing.
+Pushing a SemVer-shaped `v*` tag runs the complete release checks and then waits
+for approval on the protected `release` environment before creating a signed
+draft GitHub release. Draft review remains mandatory before public publication.
 
 ## Signing key
 
 Create a dedicated RSA signing key; the Terraform Registry does not accept the
 default ECC key type. Keep the private key and passphrase outside Git. Export
-the public key to the Terraform Registry namespace and configure these GitHub
-Actions secrets:
+the public key to the Terraform Registry namespace. In GitHub, create a
+protected environment named `release`, require a reviewer, restrict deployment
+refs to release tags when publishing is enabled, and configure these environment
+secrets:
 
 - `GPG_PRIVATE_KEY`: ASCII-armored private key.
 - `PASSPHRASE`: private-key passphrase.
@@ -44,8 +47,8 @@ gpg --verify dist/terraform-provider-incidentgarden_<version>_SHA256SUMS.sig \
 3. Inspect archives, binary names, registry manifest, and checksums in `dist/`.
 4. Validate a local signature using the dedicated release key.
 5. Create the annotated tag `v0.1.0-rc.1` on the reviewed commit.
-6. Enable the tag trigger and publishing job in a separately reviewed change.
-7. Push the tag, inspect the draft GitHub release, verify its signature and
+6. Push the tag, approve the protected `release` environment, inspect the draft
+   GitHub release, verify its signature and
    checksums, and only then publish the draft.
 
 GoReleaser derives `0.1.0-rc.1` from the tag and injects it into `main.version`.
