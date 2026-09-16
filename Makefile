@@ -1,4 +1,4 @@
-.PHONY: build fmt test check testacc dev changelog-new changelog-check changelog-release
+.PHONY: build fmt test check testacc dev changelog-new changelog-check changelog-release release-check release-snapshot
 
 CHANGIE ?= changie
 
@@ -33,6 +33,12 @@ changelog-release:
 	@test -n "$(VERSION)" || (echo "VERSION is required (for example: make changelog-release VERSION=0.1.0)"; exit 1)
 	$(CHANGIE) batch "$(VERSION)"
 	$(CHANGIE) merge
+
+release-check:
+	goreleaser check
+
+release-snapshot:
+	goreleaser release --snapshot --clean --skip=sign,publish
 
 testacc:
 	TF_ACC=1 go test ./internal/provider -v -timeout 30m

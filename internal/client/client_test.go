@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -87,6 +88,34 @@ func TestNotFound(t *testing.T) {
 	_, err := c.GetTeam(context.Background(), "acme", "gone")
 	if !IsNotFound(err) {
 		t.Fatalf("expected not found, got %v", err)
+	}
+}
+
+func TestOnlyNotFoundStatusRemovesState(t *testing.T) {
+	for _, status := range []int{
+		http.StatusUnauthorized,
+		http.StatusForbidden,
+		http.StatusConflict,
+		http.StatusUnprocessableEntity,
+		http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+	} {
+		err := &APIError{StatusCode: status, Code: "test", Message: "request failed"}
+		if IsNotFound(err) {
+			t.Errorf("HTTP %d must not be classified as not found", status)
+		}
+	}
+}
+
+func TestAPIErrorDoesNotFormatDetails(t *testing.T) {
+	err := (&APIError{
+		StatusCode: http.StatusUnprocessableEntity,
+		Code:       "invalid_request",
+		Message:    "request rejected",
+		Details:    map[string]any{"api_key": "must-not-appear"},
+	}).Error()
+	if strings.Contains(err, "must-not-appear") {
+		t.Fatalf("API error exposed details: %s", err)
 	}
 }
 

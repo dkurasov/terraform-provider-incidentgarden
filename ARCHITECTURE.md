@@ -96,6 +96,13 @@ Pull requests run formatting, linting, tests, build validation, and changelog
 checks. Pushes to `main` build the provider. Publishing is intentionally present
 only as a disabled CI placeholder.
 
+Release artifacts are produced by GoReleaser from `.goreleaser.yml`. Builds are
+static, version-injected protocol-6 binaries packaged per platform with a
+Terraform Registry manifest, SHA-256 checksums, and a detached GPG checksum
+signature. The release workflow currently exposes only manual unsigned snapshot
+validation; its GitHub publishing job is hard-disabled and configured to create
+draft releases when eventually enabled.
+
 ## Known boundaries
 
 - No machine authentication or automatic JWT refresh is implemented.
