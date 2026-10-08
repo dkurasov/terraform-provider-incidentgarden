@@ -13,7 +13,7 @@ func identityAttributes() map[string]schema.Attribute {
 			Description:   "Server-generated resource identifier.",
 			PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 		},
-		"organization": schema.StringAttribute{Optional: true, Computed: true, Description: "Organization slug; defaults to the provider organization.", PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
+		"organization": schema.StringAttribute{Optional: true, Computed: true, Description: "Organization slug; defaults to the provider organization.", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown(), stringplanmodifier.RequiresReplace()}},
 		"created_at":   schema.StringAttribute{Computed: true},
 		"updated_at":   schema.StringAttribute{Computed: true},
 	}

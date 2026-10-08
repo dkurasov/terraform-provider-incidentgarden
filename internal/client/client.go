@@ -16,14 +16,40 @@ import (
 
 const defaultTimeout = 30 * time.Second
 
+const (
+	maxAttempts       = 3
+	maxRetryAfterWait = 60 * time.Second
+)
+
 type Client struct {
-	baseURL *url.URL
-	token   string
-	csrf    string
-	http    *http.Client
+	baseURL     *url.URL
+	credentials CredentialProvider
+	http        *http.Client
+}
+
+type Credentials struct {
+	AccessToken string
+	CSRFToken   string
+}
+
+type CredentialProvider interface {
+	Credentials(context.Context) (Credentials, error)
+}
+
+type StaticCredentials struct {
+	AccessToken string
+	CSRFToken   string
+}
+
+func (credentials StaticCredentials) Credentials(context.Context) (Credentials, error) {
+	return Credentials(credentials), nil
 }
 
 func New(endpoint, token, csrf string, httpClient *http.Client) (*Client, error) {
+	return NewWithCredentials(endpoint, StaticCredentials{AccessToken: token, CSRFToken: csrf}, httpClient)
+}
+
+func NewWithCredentials(endpoint string, credentials CredentialProvider, httpClient *http.Client) (*Client, error) {
 	u, err := url.Parse(strings.TrimRight(endpoint, "/"))
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return nil, fmt.Errorf("invalid Incident Garden endpoint %q", endpoint)
@@ -31,11 +57,10 @@ func New(endpoint, token, csrf string, httpClient *http.Client) (*Client, error)
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: defaultTimeout}
 	}
-	token = strings.TrimSpace(token)
-	if len(token) >= len("Bearer ") && strings.EqualFold(token[:len("Bearer ")], "Bearer ") {
-		token = strings.TrimSpace(token[len("Bearer "):])
+	if credentials == nil {
+		return nil, errors.New("credential provider is required")
 	}
-	return &Client{baseURL: u, token: token, csrf: csrf, http: httpClient}, nil
+	return &Client{baseURL: u, credentials: credentials, http: httpClient}, nil
 }
 
 type APIError struct {
@@ -92,8 +117,12 @@ func parseRetryAfter(value string, now time.Time) time.Duration {
 }
 
 func (c *Client) do(ctx context.Context, method, path string, request, response any) error {
+	reference, err := url.Parse(path)
+	if err != nil {
+		return fmt.Errorf("parse request path: %w", err)
+	}
+	requestURL := c.baseURL.ResolveReference(reference).String()
 	var payload []byte
-	var err error
 	if request != nil {
 		payload, err = json.Marshal(request)
 		if err != nil {
@@ -101,12 +130,16 @@ func (c *Client) do(ctx context.Context, method, path string, request, response 
 		}
 	}
 
-	maxAttempts := 1
-	if method == http.MethodGet {
-		maxAttempts = 3
-	}
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, method, c.baseURL.ResolveReference(&url.URL{Path: path}).String(), bytes.NewReader(payload))
+		credentials, err := c.credentials.Credentials(ctx)
+		if err != nil {
+			return fmt.Errorf("get credentials: %w", err)
+		}
+		token := strings.TrimSpace(credentials.AccessToken)
+		if len(token) >= len("Bearer ") && strings.EqualFold(token[:len("Bearer ")], "Bearer ") {
+			token = strings.TrimSpace(token[len("Bearer "):])
+		}
+		req, err := http.NewRequestWithContext(ctx, method, requestURL, bytes.NewReader(payload))
 		if err != nil {
 			return fmt.Errorf("create request: %w", err)
 		}
@@ -114,14 +147,14 @@ func (c *Client) do(ctx context.Context, method, path string, request, response 
 		if request != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
-		if c.token != "" {
-			req.Header.Set("Authorization", "Bearer "+c.token)
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
 		}
-		if method != http.MethodGet && method != http.MethodHead && c.csrf != "" {
-			req.Header.Set("X-CSRF-Token", c.csrf)
+		if method != http.MethodGet && method != http.MethodHead && credentials.CSRFToken != "" {
+			req.Header.Set("X-CSRF-Token", credentials.CSRFToken)
 			// The CSRF value is sent as a request cookie; Secure/HttpOnly/SameSite
 			// only apply to Set-Cookie response headers.
-			req.AddCookie(&http.Cookie{Name: "csrf_token", Value: c.csrf}) //nolint:gosec // request cookie, not a Set-Cookie header
+			req.AddCookie(&http.Cookie{Name: "csrf_token", Value: credentials.CSRFToken}) //nolint:gosec // request cookie, not a Set-Cookie header
 		}
 
 		resp, err := c.http.Do(req)
@@ -146,13 +179,7 @@ func (c *Client) do(ctx context.Context, method, path string, request, response 
 		apiErr := decodeAPIError(resp, body)
 		var typed *APIError
 		if attempt+1 < maxAttempts && errors.As(apiErr, &typed) && typed.StatusCode == http.StatusTooManyRequests {
-			delay := typed.RetryAfter
-			if delay <= 0 {
-				delay = time.Duration(attempt+1) * 100 * time.Millisecond
-			}
-			if delay > 5*time.Second {
-				delay = 5 * time.Second
-			}
+			delay := retryDelay(typed.RetryAfter, attempt)
 			timer := time.NewTimer(delay)
 			select {
 			case <-ctx.Done():
@@ -165,6 +192,16 @@ func (c *Client) do(ctx context.Context, method, path string, request, response 
 		return apiErr
 	}
 	return errors.New("request attempts exhausted")
+}
+
+func retryDelay(retryAfter time.Duration, attempt int) time.Duration {
+	if retryAfter <= 0 {
+		retryAfter = time.Duration(attempt+1) * 100 * time.Millisecond
+	}
+	if retryAfter > maxRetryAfterWait {
+		return maxRetryAfterWait
+	}
+	return retryAfter
 }
 
 func orgPath(org, suffix string) string {

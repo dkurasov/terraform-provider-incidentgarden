@@ -10,15 +10,19 @@ The provider manages the core Incident Garden alert-routing topology:
 
 ```text
 team
+├── authoritative membership
 ├── schedule
+│   └── ordered rotations → user, team, or empty position
 ├── escalation policy
 │   └── ordered steps → schedule, user, or team
 └── integration → escalation policy
     └── integration policy
 ```
 
-Schedule rotations and overrides have separate remote identities and are not
-part of the schedule resource. The provider currently exposes no data sources.
+Schedule rotations have separate remote identities and standalone Terraform
+resources; schedule overrides remain outside the provider. The organization
+members data source provides the privileged email-to-user-ID lookup needed to
+configure memberships and rotations.
 
 ## Components
 
@@ -51,22 +55,31 @@ Terraform configuration
   → Terraform state
 ```
 
-The client normalizes both raw JWTs and values prefixed with `Bearer`. It sends
-the token in the `Authorization` header. Mutating requests additionally send
-the CSRF token in both `X-CSRF-Token` and the `csrf_token` cookie.
+The client obtains credentials through a small `CredentialProvider` interface
+on every request attempt, then normalizes both raw JWTs and values prefixed with
+`Bearer`. Mutating requests additionally send the CSRF token in both
+`X-CSRF-Token` and the `csrf_token` cookie. Provider configuration currently
+installs a static implementation; the boundary permits a future external
+credential source without coupling refresh persistence to Terraform resources.
 
 ## State and lifecycle rules
 
 - Every resource supports create, read, update, delete, and import.
-- Imports use `<organization-slug>/<resource-id>` because item endpoints require
-  both values.
+- Most imports use `<organization-slug>/<resource-id>`. Rotation imports also
+  carry the parent schedule ID.
 - A genuine HTTP 404 during read removes the object from Terraform state. Other
   failures, including 403, remain errors.
 - `organization` and remote relationship fields marked immutable require
   replacement instead of in-place updates.
 - Reads reconstruct state from the API so out-of-band changes appear as drift.
-- Optional JSON attributes are canonicalized before storage to prevent diffs
-  caused only by whitespace or object-key formatting.
+- `incidentgarden_team_members` has exclusive, authoritative ownership of a
+  team's whole member set. It adds and updates desired members before removing
+  unmanaged members; destroy removes the complete set.
+- Rotation participant lists preserve order. Rotation reads use the parent
+  schedule detail because the API exposes no rotation item GET endpoint.
+- Static integration and policy structures use typed nested attributes. Dynamic
+  integration settings remain JSON and use semantic equality, so whitespace,
+  key ordering, and equivalent number spellings do not create drift.
 - Integration `api_key` is sensitive, returned only on creation, and preserved
   from prior state during subsequent reads. `api_key_prefix` is non-sensitive.
 - Deletes do not cascade; dependency conflicts are returned as diagnostics.
@@ -74,10 +87,9 @@ the CSRF token in both `X-CSRF-Token` and the `csrf_token` cookie.
 ## Reliability and security
 
 The HTTP client uses request contexts, a 30-second default timeout, bounded
-response reads, typed API errors, and URL escaping. Only GET requests retry HTTP
-429 responses, up to three attempts, because the API does not document
-idempotency keys for mutations. `Retry-After` is honored with a five-second
-per-attempt ceiling.
+response reads, typed API errors, and URL escaping. All methods retry an HTTP
+429 response up to three attempts because the API guarantees that 4xx responses
+precede mutation. `Retry-After` is honored with a 60-second per-attempt ceiling.
 
 Credentials and secret response bodies must never be logged or committed. The
 current browser-session JWT and CSRF model is suitable for short interactive
@@ -87,7 +99,7 @@ upstream API requirement.
 ## Testing and delivery
 
 Unit tests cover state helpers, JSON normalization, imports, secret retention,
-authentication, envelopes, errors, retries, and pagination. Acceptance tests
+credential retrieval, authentication, envelopes, errors, retries, and pagination. Acceptance tests
 exercise real Terraform lifecycle operations against an explicitly configured
 disposable organization. The full topology test remains opt-in because of the
 documented hosted-API integration deletion issue.
@@ -106,8 +118,8 @@ draft releases when eventually enabled.
 ## Known boundaries
 
 - No machine authentication or automatic JWT refresh is implemented.
-- Schedule rotations and overrides are future standalone resources.
-- Integration settings, severity mappings, and policy conditions/actions use
-  canonical JSON until stable typed schemas are introduced.
+- Schedule overrides are not managed.
+- Dynamic integration settings remain canonical JSON; stable severity,
+  condition, and policy-action structures are typed.
 - The hosted API can retain a hidden escalation-policy reference after an
   integration is deleted, preventing deterministic teardown of some topologies.

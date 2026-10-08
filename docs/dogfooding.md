@@ -31,6 +31,11 @@ terraform destroy
 terraform plan -detailed-exitcode
 ```
 
+Set `TF_VAR_on_call_email` to an existing member. The test account must be an
+organization administrator or owner to use the member lookup. Use a newly
+created disposable team: the membership resource owns its complete member set
+and must never be aimed at a shared production team.
+
 Both clean-plan commands must exit 0. Repeat from zero state. Then perform the
 documented test cases one at a time: mutate a mutable field through the API,
 confirm Terraform detects and reconciles drift; import each object into matching

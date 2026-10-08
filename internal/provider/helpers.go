@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -67,6 +68,14 @@ func stringPointer(value types.String) *string {
 	return &v
 }
 
+func configured(value attr.Value) bool {
+	return value != nil && !value.IsNull() && !value.IsUnknown()
+}
+
+func deactivateAfterCreate(value types.Bool) bool {
+	return !value.IsNull() && !value.IsUnknown() && !value.ValueBool()
+}
+
 func canonicalJSON(raw []byte, fallback string) (types.String, error) {
 	if len(raw) == 0 || string(raw) == "null" {
 		raw = []byte(fallback)
@@ -80,6 +89,11 @@ func canonicalJSON(raw []byte, fallback string) (types.String, error) {
 		return types.StringNull(), err
 	}
 	return types.StringValue(string(encoded)), nil
+}
+
+func canonicalJSONString(raw []byte, fallback string) (jsonStringValue, error) {
+	value, err := canonicalJSON(raw, fallback)
+	return jsonStringValue{StringValue: value}, err
 }
 
 func rawJSON(value types.String, fallback string) (json.RawMessage, error) {

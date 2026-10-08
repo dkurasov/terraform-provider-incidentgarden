@@ -3,12 +3,20 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 )
+
+type changingCredentials struct{ calls int }
+
+func (provider *changingCredentials) Credentials(context.Context) (Credentials, error) {
+	provider.calls++
+	return Credentials{AccessToken: fmt.Sprintf("access-%d", provider.calls), CSRFToken: "csrf"}, nil
+}
 
 func TestMutationAuthenticationAndEnvelope(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -129,6 +137,67 @@ func TestParseRetryAfter(t *testing.T) {
 	}
 }
 
+func TestMutationRetriesTooManyRequests(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts++
+		if attempts < maxAttempts {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"data":{"id":"team-1","name":"Platform"}}`))
+	}))
+	defer server.Close()
+
+	c, _ := New(server.URL, "token", "csrf", server.Client())
+	if _, err := c.CreateTeam(context.Background(), "acme", map[string]any{"name": "Platform"}); err != nil {
+		t.Fatal(err)
+	}
+	if attempts != maxAttempts {
+		t.Fatalf("attempts = %d, want %d", attempts, maxAttempts)
+	}
+}
+
+func TestCredentialProviderIsConsultedForEveryAttempt(t *testing.T) {
+	provider := &changingCredentials{}
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if got := r.Header.Get("Authorization"); got != fmt.Sprintf("Bearer access-%d", attempts) {
+			t.Errorf("authorization = %q on attempt %d", got, attempts)
+		}
+		if attempts == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		_, _ = w.Write([]byte(`{"data":{"id":"team-1","name":"Platform"}}`))
+	}))
+	defer server.Close()
+
+	c, err := NewWithCredentials(server.URL, provider, server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.GetTeam(context.Background(), "acme", "team-1"); err != nil {
+		t.Fatal(err)
+	}
+	if provider.calls != 2 {
+		t.Fatalf("credential calls = %d, want 2", provider.calls)
+	}
+}
+
+func TestRetryDelay(t *testing.T) {
+	if got := retryDelay(90*time.Second, 0); got != maxRetryAfterWait {
+		t.Fatalf("retry delay = %v, want %v", got, maxRetryAfterWait)
+	}
+	if got := retryDelay(0, 1); got != 200*time.Millisecond {
+		t.Fatalf("fallback retry delay = %v", got)
+	}
+}
+
 func TestPaginate(t *testing.T) {
 	calls := 0
 	got, err := Paginate(context.Background(), func(_ context.Context, limit, offset int) ([]int, int, error) {
@@ -142,5 +211,24 @@ func TestPaginate(t *testing.T) {
 	}, 2)
 	if err != nil || len(got) != 5 || calls != 3 {
 		t.Fatalf("got=%v calls=%d err=%v", got, calls, err)
+	}
+}
+
+func TestOrganizationMemberPaginationQuery(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/orgs/acme/members" || r.URL.Query().Get("limit") != "25" || r.URL.Query().Get("offset") != "50" {
+			t.Errorf("unexpected request URL %s", r.URL.String())
+		}
+		_, _ = w.Write([]byte(`{"data":{"items":[{"id":"user-1","email":"on-call@example.com"}],"total":51,"limit":25,"offset":50}}`))
+	}))
+	defer server.Close()
+
+	c, err := New(server.URL, "access", "", server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	members, total, err := c.ListOrganizationMembersPage(context.Background(), "acme", 25, 50)
+	if err != nil || total != 51 || len(members) != 1 || members[0].ID != "user-1" {
+		t.Fatalf("members=%#v total=%d err=%v", members, total, err)
 	}
 }

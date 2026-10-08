@@ -28,6 +28,23 @@ test for the sequence above.
 The provider intentionally does not sleep, cascade, retry destructive requests,
 or discard state. It reports the API failure and retains the policy in state.
 
+## Destruction is not always a reversible topology operation
+
+The retained integration reference above is not the only reason a full destroy
+can stop. Alerts may retain escalation-policy references for up to the product's
+90-day alert-retention period, so a policy can remain undeletable even after
+its live routing objects are gone. Team and schedule deletion then remain
+blocked by that policy. Terraform correctly retains each rejected object in
+state; it cannot safely reinterpret a dependency conflict as successful
+deletion.
+
+Plan production ownership around these constraints: use dedicated teams, keep
+state after a partial destroy, and arrange backend/operator cleanup when a 409
+cannot be resolved through visible live resources. Do not automate blind state
+removal. The authoritative `incidentgarden_team_members` resource is a separate
+destructive boundary: apply removes unconfigured members and destroy removes
+all members, potentially revoking the caller's own team access.
+
 ## Machine authentication
 
 The API currently requires a short-lived browser-session JWT and a matching
@@ -38,3 +55,10 @@ The backend workstream should add named automation identities with revocable,
 organization- and permission-scoped bearer tokens. Tokens should support an
 optional expiry, last-used metadata, audit events, one-time display, hashed
 server-side storage, and mutation access without browser CSRF.
+
+## Rotation time restriction cannot be cleared in place
+
+The OpenAPI update schema permits `time_restriction: null`, but the hosted API
+retained the existing restriction when Terraform sent that clear on 2026-10-08.
+The provider therefore replaces a rotation when configuration removes a stored
+time restriction. Adding or changing a restriction remains an in-place update.

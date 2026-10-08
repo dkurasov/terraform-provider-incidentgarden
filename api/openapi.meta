@@ -1,0 +1,4 @@
+source=maintainer-supplied Incident Garden OpenAPI contract
+upstream_commit=unknown (not present in the supplied artifact or API build metadata)
+sha256=925883f7c301247e69165ef5c13de1e42d2302aff2bf91c9888bae7a6c6f1e3a
+vendored_at=2026-10-08

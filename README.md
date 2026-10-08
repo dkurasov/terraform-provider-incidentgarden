@@ -2,6 +2,8 @@
 
 This provider manages the core Incident Garden alert-routing topology with Terraform Plugin Framework protocol v6.
 
+This is a community-developed provider. It is not affiliated with, maintained by, or endorsed by Incident Garden.
+
 ```hcl
 terraform {
   required_providers {
@@ -21,7 +23,7 @@ provider "incidentgarden" {
 
 Configuration can also be supplied through `INCIDENTGARDEN_ENDPOINT`, `INCIDENTGARDEN_TOKEN`, `INCIDENTGARDEN_CSRF_TOKEN`, and `INCIDENTGARDEN_ORGANIZATION`. JWT access tokens expire after 15 minutes according to the current API contract. Mutations additionally require the CSRF value as both cookie and header. The API currently documents no long-lived machine token, so unattended runs need an external session/token renewal mechanism; see the execution plan.
 
-Supported resources are `incidentgarden_team`, `incidentgarden_schedule`, `incidentgarden_escalation_policy`, `incidentgarden_integration`, and `incidentgarden_integration_policy`. Every resource imports as `<organization-slug>/<resource-id>`.
+Supported resources are `incidentgarden_team`, `incidentgarden_team_members`, `incidentgarden_schedule`, `incidentgarden_rotation`, `incidentgarden_escalation_policy`, `incidentgarden_integration`, and `incidentgarden_integration_policy`. The `incidentgarden_members` data source resolves organization-member email addresses to user IDs. Most resources import as `<organization-slug>/<resource-id>`; rotation and team-membership import forms are documented in the resource reference.
 
 See the [resource reference](docs/resources.md) for all configurable and computed fields, and [Architecture](ARCHITECTURE.md) for the provider's component and lifecycle design.
 

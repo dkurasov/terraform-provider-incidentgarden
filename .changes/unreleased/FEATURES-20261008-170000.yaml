@@ -1,0 +1,5 @@
+kind: FEATURES
+body: "provider: Add authoritative team membership, organization member lookup, and ordered schedule rotation management."
+time: 2026-10-08T17:00:00+03:00
+custom:
+    Issue: "3"

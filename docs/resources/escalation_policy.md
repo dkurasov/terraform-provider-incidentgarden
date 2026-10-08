@@ -34,7 +34,8 @@ resource "incidentgarden_escalation_policy" "critical" {
 - `id`, `created_at`, `updated_at` (String, Read-only) Server metadata.
 
 Configure exactly the target identifier matching `target_type`. The API sorts
-steps by activation offset, so configure offsets in ascending order.
+steps by activation offset, so descending offsets are rejected during planning.
+Equal offsets are accepted and retain their configuration order.
 
 ## Import
 

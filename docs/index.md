@@ -6,8 +6,10 @@ description: |-
 
 # Incident Garden Provider
 
-The Incident Garden provider manages teams, schedules, escalation policies,
-integrations, and integration policies through the Incident Garden API.
+This community-developed provider manages teams, authoritative team membership,
+schedules, rotations, escalation policies, integrations, and integration
+policies through the Incident Garden API. It is not affiliated with or endorsed
+by Incident Garden.
 
 ```terraform
 provider "incidentgarden" {
