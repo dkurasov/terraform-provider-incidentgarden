@@ -2,8 +2,10 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/dkurasov/terraform-provider-incidentgarden/internal/client"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -51,6 +53,37 @@ func (r *escalationPolicyResource) Schema(_ context.Context, _ resource.SchemaRe
 
 func (r *escalationPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	configureResource(req, resp, &r.provider)
+}
+
+func (r *escalationPolicyResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var config escalationPolicyModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if i := firstDescendingStep(config.Steps); i >= 0 {
+		previous := config.Steps[i-1].ActivationOffsetMinutes.ValueInt64()
+		current := config.Steps[i].ActivationOffsetMinutes.ValueInt64()
+		resp.Diagnostics.AddAttributeError(
+			path.Root("step").AtListIndex(i).AtName("activation_offset_minutes"),
+			"Escalation steps are not ordered",
+			fmt.Sprintf("Step %d has offset %d, which is before step %d with offset %d. Order steps by ascending activation_offset_minutes; equal offsets retain configuration order.", i, current, i-1, previous),
+		)
+	}
+}
+
+func firstDescendingStep(steps []escalationStepModel) int {
+	for i := 1; i < len(steps); i++ {
+		previous := steps[i-1].ActivationOffsetMinutes
+		current := steps[i].ActivationOffsetMinutes
+		if previous.IsNull() || previous.IsUnknown() || current.IsNull() || current.IsUnknown() {
+			continue
+		}
+		if current.ValueInt64() < previous.ValueInt64() {
+			return i
+		}
+	}
+	return -1
 }
 
 func expandSteps(values []escalationStepModel) []client.EscalationStep {
@@ -162,3 +195,4 @@ func (m *escalationPolicyModel) apply(org string, v client.EscalationPolicy) {
 }
 
 var _ resource.ResourceWithImportState = (*escalationPolicyResource)(nil)
+var _ resource.ResourceWithValidateConfig = (*escalationPolicyResource)(nil)

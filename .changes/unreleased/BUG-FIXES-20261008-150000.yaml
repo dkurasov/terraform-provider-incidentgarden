@@ -1,0 +1,5 @@
+kind: BUG FIXES
+body: "provider: Reconcile inactive creates, validate escalation ordering, retry rate-limited mutations, and use drift-safe typed policy and severity configuration."
+time: 2026-10-08T15:00:00+03:00
+custom:
+    Issue: "3"

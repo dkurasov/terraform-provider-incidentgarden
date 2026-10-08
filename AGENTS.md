@@ -1,6 +1,6 @@
 # Incident Garden Terraform Provider
 
-- API contract: `/Users/d.kurasov/Downloads/openapi-incidentgarden.yaml` (development input; keep changes aligned with the supplied contract).
+- API contract: `api/openapi.yaml` (vendored development input; use `make api-sync OPENAPI_SOURCE=/path/to/openapi.yaml OPENAPI_COMMIT=<commit>` and keep changes aligned with it).
 - Execution plan and decisions: `docs/exec-plans/terraform-provider-mvp.md`.
 - Maintained architecture: `ARCHITECTURE.md`; update it when component boundaries, lifecycle rules, authentication, or delivery design changes.
 - Terraform field reference: `docs/resources.md`; keep it synchronized with provider and resource schemas.

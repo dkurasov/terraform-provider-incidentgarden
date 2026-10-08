@@ -46,7 +46,7 @@ func TestAccTopologyBasic(t *testing.T) {
 		CheckDestroy:             checkAllResourcesDestroyed,
 		Steps: []acctest.TestStep{
 			{
-				Config: testTopologyConfig(org, name, "Initial", true),
+				Config: testTopologyConfig(org, name, "Initial", false),
 				Check: acctest.ComposeAggregateTestCheckFunc(
 					acctest.TestCheckResourceAttrSet("incidentgarden_schedule.test", "id"),
 					acctest.TestCheckResourceAttr("incidentgarden_schedule.test", "name", name+" Schedule Initial"),
@@ -54,19 +54,21 @@ func TestAccTopologyBasic(t *testing.T) {
 					acctest.TestCheckResourceAttr("incidentgarden_escalation_policy.test", "step.0.activation_offset_minutes", "0"),
 					acctest.TestCheckResourceAttrSet("incidentgarden_integration.test", "id"),
 					acctest.TestCheckResourceAttrSet("incidentgarden_integration.test", "api_key"),
+					acctest.TestCheckResourceAttr("incidentgarden_integration.test", "is_active", "false"),
 					acctest.TestCheckResourceAttrSet("incidentgarden_integration_policy.test", "id"),
 					acctest.TestCheckResourceAttr("incidentgarden_integration_policy.test", "position", "0"),
+					acctest.TestCheckResourceAttr("incidentgarden_integration_policy.test", "is_active", "false"),
 				),
 			},
 			{
-				Config: testTopologyConfig(org, name, "Updated", false),
+				Config: testTopologyConfig(org, name, "Updated", true),
 				Check: acctest.ComposeAggregateTestCheckFunc(
 					acctest.TestCheckResourceAttr("incidentgarden_schedule.test", "name", name+" Schedule Updated"),
 					acctest.TestCheckResourceAttr("incidentgarden_escalation_policy.test", "name", name+" Escalation Updated"),
 					acctest.TestCheckResourceAttr("incidentgarden_integration.test", "name", name+" Integration Updated"),
-					acctest.TestCheckResourceAttr("incidentgarden_integration.test", "is_active", "false"),
+					acctest.TestCheckResourceAttr("incidentgarden_integration.test", "is_active", "true"),
 					acctest.TestCheckResourceAttr("incidentgarden_integration_policy.test", "name", name+" Policy Updated"),
-					acctest.TestCheckResourceAttr("incidentgarden_integration_policy.test", "is_active", "false"),
+					acctest.TestCheckResourceAttr("incidentgarden_integration_policy.test", "is_active", "true"),
 				),
 			},
 			{ResourceName: "incidentgarden_schedule.test", ImportState: true, ImportStateIdPrefix: org + "/", ImportStateVerify: true},
@@ -132,10 +134,10 @@ resource "incidentgarden_integration_policy" "test" {
   name           = "%[2]s Policy %[3]s"
   position       = 0
   is_active      = %[4]t
-  conditions_json = jsonencode({
+  conditions = {
     matchers = [{ key = "source", op = "exists" }]
-  })
-  action_json = jsonencode({ type = "drop" })
+  }
+  action = { type = "drop" }
 }
 `, org, name, suffix, active)
 }

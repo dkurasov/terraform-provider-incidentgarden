@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -15,6 +16,20 @@ type Team struct {
 	UpdatedAt   string  `json:"updated_at"`
 }
 
+type TeamMember struct {
+	UserID   string `json:"user_id"`
+	TeamRole string `json:"team_role"`
+}
+
+type OrganizationMember struct {
+	ID        string `json:"id"`
+	Email     string `json:"email"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	OrgRole   string `json:"org_role"`
+	IsActive  bool   `json:"is_active"`
+}
+
 type Schedule struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
@@ -22,6 +37,47 @@ type Schedule struct {
 	TeamID      string  `json:"team_id"`
 	CreatedAt   string  `json:"created_at"`
 	UpdatedAt   string  `json:"updated_at"`
+}
+
+type ScheduleDetail struct {
+	Schedule
+	Rotations []Rotation `json:"rotations"`
+}
+
+type Rotation struct {
+	ID              string                   `json:"id"`
+	ScheduleID      string                   `json:"schedule_id"`
+	Name            string                   `json:"name"`
+	Type            string                   `json:"type"`
+	Length          int64                    `json:"length"`
+	StartDate       string                   `json:"start_date"`
+	EndDate         *string                  `json:"end_date"`
+	TimeRestriction *RotationTimeRestriction `json:"time_restriction"`
+	Participants    []RotationParticipant    `json:"participants"`
+	CreatedAt       string                   `json:"created_at"`
+	UpdatedAt       string                   `json:"updated_at"`
+}
+
+type RotationParticipant struct {
+	ID              string  `json:"id"`
+	ParticipantType string  `json:"participant_type"`
+	UserID          *string `json:"user_id"`
+	TeamID          *string `json:"team_id"`
+	Position        int64   `json:"position"`
+}
+
+type RotationTimeRestriction struct {
+	Type         string                          `json:"type"`
+	Restrictions []RotationTimeRestrictionWindow `json:"restrictions"`
+}
+
+type RotationTimeRestrictionWindow struct {
+	StartHour int64  `json:"start_hour"`
+	StartMin  int64  `json:"start_min"`
+	EndHour   int64  `json:"end_hour"`
+	EndMin    int64  `json:"end_min"`
+	StartDay  string `json:"start_day"`
+	EndDay    string `json:"end_day"`
 }
 
 type EscalationStep struct {
@@ -44,19 +100,13 @@ type EscalationPolicy struct {
 	UpdatedAt   string           `json:"updated_at"`
 }
 
-type SeverityMapping struct {
-	SourceField string              `json:"source_field,omitempty"`
-	Mapping     map[string][]string `json:"mapping,omitempty"`
-	Default     string              `json:"default,omitempty"`
-}
-
 type Integration struct {
 	ID                 string          `json:"id"`
 	Name               string          `json:"name"`
 	Type               string          `json:"type"`
 	TeamID             string          `json:"team_id"`
 	EscalationPolicyID string          `json:"escalation_policy_id"`
-	SeverityMapping    SeverityMapping `json:"severity_mapping"`
+	SeverityMapping    json.RawMessage `json:"severity_mapping"`
 	Settings           json.RawMessage `json:"settings"`
 	APIKeyPrefix       string          `json:"api_key_prefix"`
 	APIKey             string          `json:"api_key,omitempty"`
@@ -82,6 +132,15 @@ type IntegrationPolicy struct {
 
 type envelope[T any] struct {
 	Data T `json:"data"`
+}
+
+type paginatedEnvelope[T any] struct {
+	Data struct {
+		Items  []T `json:"items"`
+		Total  int `json:"total"`
+		Limit  int `json:"limit"`
+		Offset int `json:"offset"`
+	} `json:"data"`
 }
 
 func get[T any](ctx context.Context, c *Client, path string) (T, error) {
@@ -112,6 +171,31 @@ func (c *Client) DeleteTeam(ctx context.Context, org, id string) error {
 	return c.do(ctx, http.MethodDelete, orgPath(org, "/teams/"+url.PathEscape(id)), nil, nil)
 }
 
+func (c *Client) ListTeamMembers(ctx context.Context, org, teamID string) ([]TeamMember, error) {
+	return get[[]TeamMember](ctx, c, orgPath(org, "/teams/"+url.PathEscape(teamID)+"/members"))
+}
+
+func (c *Client) AddTeamMember(ctx context.Context, org, teamID string, body any) (TeamMember, error) {
+	return mutate[TeamMember](ctx, c, http.MethodPost, orgPath(org, "/teams/"+url.PathEscape(teamID)+"/members"), body)
+}
+
+func (c *Client) UpdateTeamMember(ctx context.Context, org, teamID, userID string, body any) (TeamMember, error) {
+	return mutate[TeamMember](ctx, c, http.MethodPatch, orgPath(org, "/teams/"+url.PathEscape(teamID)+"/members/"+url.PathEscape(userID)), body)
+}
+
+func (c *Client) RemoveTeamMember(ctx context.Context, org, teamID, userID string) error {
+	return c.do(ctx, http.MethodDelete, orgPath(org, "/teams/"+url.PathEscape(teamID)+"/members/"+url.PathEscape(userID)), nil, nil)
+}
+
+func (c *Client) ListOrganizationMembersPage(ctx context.Context, org string, limit, offset int) ([]OrganizationMember, int, error) {
+	var out paginatedEnvelope[OrganizationMember]
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	query.Set("offset", fmt.Sprintf("%d", offset))
+	err := c.do(ctx, http.MethodGet, orgPath(org, "/members")+"?"+query.Encode(), nil, &out)
+	return out.Data.Items, out.Data.Total, err
+}
+
 func (c *Client) CreateSchedule(ctx context.Context, org string, body any) (Schedule, error) {
 	return mutate[Schedule](ctx, c, http.MethodPost, orgPath(org, "/schedules"), body)
 }
@@ -120,12 +204,28 @@ func (c *Client) GetSchedule(ctx context.Context, org, id string) (Schedule, err
 	return get[Schedule](ctx, c, orgPath(org, "/schedules/"+url.PathEscape(id)))
 }
 
+func (c *Client) GetScheduleDetail(ctx context.Context, org, id string) (ScheduleDetail, error) {
+	return get[ScheduleDetail](ctx, c, orgPath(org, "/schedules/"+url.PathEscape(id)))
+}
+
 func (c *Client) UpdateSchedule(ctx context.Context, org, id string, body any) (Schedule, error) {
 	return mutate[Schedule](ctx, c, http.MethodPatch, orgPath(org, "/schedules/"+url.PathEscape(id)), body)
 }
 
 func (c *Client) DeleteSchedule(ctx context.Context, org, id string) error {
 	return c.do(ctx, http.MethodDelete, orgPath(org, "/schedules/"+url.PathEscape(id)), nil, nil)
+}
+
+func (c *Client) CreateRotation(ctx context.Context, org, scheduleID string, body any) (Rotation, error) {
+	return mutate[Rotation](ctx, c, http.MethodPost, orgPath(org, "/schedules/"+url.PathEscape(scheduleID)+"/rotations"), body)
+}
+
+func (c *Client) UpdateRotation(ctx context.Context, org, scheduleID, rotationID string, body any) (Rotation, error) {
+	return mutate[Rotation](ctx, c, http.MethodPatch, orgPath(org, "/schedules/"+url.PathEscape(scheduleID)+"/rotations/"+url.PathEscape(rotationID)), body)
+}
+
+func (c *Client) DeleteRotation(ctx context.Context, org, scheduleID, rotationID string) error {
+	return c.do(ctx, http.MethodDelete, orgPath(org, "/schedules/"+url.PathEscape(scheduleID)+"/rotations/"+url.PathEscape(rotationID)), nil, nil)
 }
 
 func (c *Client) CreateEscalationPolicy(ctx context.Context, org string, body any) (EscalationPolicy, error) {

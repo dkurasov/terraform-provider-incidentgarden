@@ -1,6 +1,6 @@
 # Live manual test
 
-This configuration creates one team, schedule, escalation policy, generic webhook integration, and integration policy in `david-tech-org`. It contains no credentials.
+This configuration creates one team, its authoritative membership, a schedule with a real rotation, an escalation policy, a generic webhook integration, and an integration policy in `david-tech-org`. It contains no credentials. Set `TF_VAR_on_call_email` to an existing organization member; listing members requires an organization admin or owner.
 
 Build a local filesystem mirror and tell Terraform to use it instead of querying the public registry:
 
@@ -17,6 +17,7 @@ Then provide the short-lived session values without writing them to disk. The to
 ```sh
 export INCIDENTGARDEN_TOKEN='eyJ...'
 export INCIDENTGARDEN_CSRF_TOKEN='...'
+export TF_VAR_on_call_email='operator@example.com'
 terraform plan
 terraform apply
 ```
@@ -31,6 +32,6 @@ Delete the complete topology in dependency-safe order with:
 terraform destroy
 ```
 
-Known hosted-API issue: on 2026-09-09, `DELETE /integrations/{id}` made the integration disappear from reads but retained its escalation-policy reference, so the subsequent policy delete returned HTTP 409. Until the backend lifecycle is corrected, a complete destroy may require backend/operator cleanup. Do not apply this example if leaving a temporary team, schedule, and escalation policy would be unacceptable.
+The membership resource owns the complete member set of the newly created team. Removing it destroys all team memberships, so do not retarget it at an existing team. A known hosted-API issue can also leave a deleted integration's escalation-policy reference behind, causing the subsequent policy delete to return HTTP 409. Until the backend lifecycle is corrected, a complete destroy may require backend/operator cleanup. Do not apply this example if leaving temporary objects would be unacceptable.
 
 Do not commit `.terraform/`, plan files, state files, variable files containing credentials, or shell history containing session values.

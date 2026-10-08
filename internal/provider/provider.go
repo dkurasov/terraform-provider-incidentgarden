@@ -36,7 +36,7 @@ func (p *incidentGardenProvider) Metadata(_ context.Context, _ provider.Metadata
 }
 
 func (p *incidentGardenProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
-	resp.Schema = providerschema.Schema{Attributes: map[string]providerschema.Attribute{
+	resp.Schema = providerschema.Schema{Description: "Community-developed Incident Garden provider; not affiliated with or endorsed by Incident Garden.", Attributes: map[string]providerschema.Attribute{
 		"endpoint":     providerschema.StringAttribute{Optional: true, Description: "Incident Garden API base URL. Defaults to INCIDENTGARDEN_ENDPOINT."},
 		"token":        providerschema.StringAttribute{Optional: true, Sensitive: true, Description: "JWT access token. Defaults to INCIDENTGARDEN_TOKEN."},
 		"csrf_token":   providerschema.StringAttribute{Optional: true, Sensitive: true, Description: "CSRF token sent as both cookie and header for mutations. Defaults to INCIDENTGARDEN_CSRF_TOKEN."},
@@ -77,11 +77,11 @@ func (p *incidentGardenProvider) Configure(ctx context.Context, req provider.Con
 }
 
 func (p *incidentGardenProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{NewTeamResource, NewScheduleResource, NewEscalationPolicyResource, NewIntegrationResource, NewIntegrationPolicyResource}
+	return []func() resource.Resource{NewTeamResource, NewTeamMembersResource, NewScheduleResource, NewRotationResource, NewEscalationPolicyResource, NewIntegrationResource, NewIntegrationPolicyResource}
 }
 
 func (p *incidentGardenProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return nil
+	return []func() datasource.DataSource{NewMembersDataSource}
 }
 
 var _ provider.Provider = (*incidentGardenProvider)(nil)

@@ -1,4 +1,4 @@
-.PHONY: build fmt test check testacc dev changelog-new changelog-check changelog-release release-check release-snapshot
+.PHONY: build fmt test check testacc dev api-sync api-check changelog-new changelog-check changelog-release release-check release-snapshot
 
 CHANGIE ?= changie
 
@@ -15,6 +15,7 @@ test:
 	go test ./...
 
 check:
+	$(MAKE) api-check
 	go mod tidy
 	git diff --exit-code -- go.mod go.sum
 	go vet ./...
@@ -22,6 +23,12 @@ check:
 	go test ./...
 	terraform fmt -check -recursive examples
 	$(MAKE) changelog-check
+
+api-sync:
+	./scripts/sync-openapi.sh
+
+api-check:
+	./scripts/check-openapi.sh
 
 changelog-new:
 	$(CHANGIE) new

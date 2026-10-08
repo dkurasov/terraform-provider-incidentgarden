@@ -13,6 +13,8 @@ provider "incidentgarden" {
   organization = var.organization
 }
 
+data "incidentgarden_members" "organization" {}
+
 resource "incidentgarden_team" "platform" {
   name        = "Platform"
   description = "Platform operations"
@@ -24,6 +26,30 @@ resource "incidentgarden_schedule" "primary" {
   description = "Primary on-call schedule"
 }
 
+resource "incidentgarden_team_members" "platform" {
+  team_id = incidentgarden_team.platform.id
+
+  member = [{
+    user_id   = data.incidentgarden_members.organization.by_email[var.on_call_email]
+    team_role = "team_admin"
+  }]
+}
+
+resource "incidentgarden_rotation" "primary" {
+  schedule_id = incidentgarden_schedule.primary.id
+  name        = "Primary daily rotation"
+  type        = "daily"
+  length      = 1
+  start_date  = "2026-01-01T09:00:00Z"
+
+  participant = [{
+    participant_type = "user"
+    user_id          = data.incidentgarden_members.organization.by_email[var.on_call_email]
+  }]
+
+  depends_on = [incidentgarden_team_members.platform]
+}
+
 resource "incidentgarden_escalation_policy" "critical" {
   team_id = incidentgarden_team.platform.id
   name    = "Critical alerts"
@@ -33,6 +59,8 @@ resource "incidentgarden_escalation_policy" "critical" {
     schedule_id               = incidentgarden_schedule.primary.id
     activation_offset_minutes = 0
   }]
+
+  depends_on = [incidentgarden_rotation.primary]
 }
 
 resource "incidentgarden_integration" "alertmanager" {
@@ -48,8 +76,8 @@ resource "incidentgarden_integration_policy" "production" {
   applies_to_all = false
   name           = "Drop non-production alerts"
   position       = 0
-  conditions_json = jsonencode({
+  conditions = {
     matchers = [{ key = "env", op = "neq", value = "production" }]
-  })
-  action_json = jsonencode({ type = "drop" })
+  }
+  action = { type = "drop" }
 }
